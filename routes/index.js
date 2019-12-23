@@ -3,14 +3,33 @@ var router = express.Router();
 var mysql = require("mysql");
 const crypto = require('crypto');
 var vm = require('vm');
-
-const connection = mysql.createConnection({
+var connection;
+function handleError(){
+	connection = mysql.createConnection({
 		host:"localhost",
-		user:"root",
-		password:"root",
+		user:"sizhan",
+		password:"tst88888888",
 		port:"3306",
-		database:"test"
+		database:"sizhan"
 	})
+	 connection.connect(function (err) {
+        if (err) {
+            console.log('error when connecting to db:', err);
+            setTimeout(handleError, 2000);
+        }
+    });
+ 
+    connection.on('error', function (err) {
+        console.log('db error', err);
+        // 如果是连接断开，自动重新连接
+        if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+            handleError();
+        } else {
+            throw err;
+        }
+    });
+}
+handleError();
 connection.connect(()=>{
 	console.log( __filename );
 	console.log( __dirname );
@@ -34,7 +53,6 @@ connection.connect(()=>{
 	    vm.runInContext(code, sandbox, {time: 1000}); // time limit: 1000ms
 	    for(var key in e.output){
 	        if(e.output[key] != sandbox[key]){
-	            console.log(`testing failed in case ${i}`);
 	            break;
 	        }
 	    }    
@@ -42,7 +60,16 @@ connection.connect(()=>{
 });
 router.get('/', function(req, res) {
 	var  sql = 'SELECT * FROM password';
-	console.log(aesDecrypt('9fc5a80d416857862914aa60b9675e21','I LOVE NODE'))
+	connection.query(sql,(error,result)=>{
+		if(!error){
+			res.json({status:200,data:result,message:"获取成功"})
+		}else{
+			res.json({status:400,message:"获取失败"})
+		}
+	})
+});
+router.get('/banner', function(req, res) {
+	var  sql = 'SELECT * FROM banner';
 	connection.query(sql,(error,result)=>{
 		if(!error){
 			res.json({status:200,data:result,message:"获取成功"})
